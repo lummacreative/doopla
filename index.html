@@ -68,7 +68,10 @@
 
     var params = location.search || "";
     var app = (params.match(/[?&]app=([^&]*)/) || [])[1] || "";
-    if (FORMULARIOS[app]) {
+    // 19/11/2026: la pretasación tiene su página propia, que no depende de
+    // que la página de Google cargue en el celular. Este link lleva ahí.
+    if (app === "pretasacion") { location.replace("tasacion/"); }
+    else if (FORMULARIOS[app]) {
       document.title = FORMULARIOS[app];
       aviso.textContent = "Abriendo el formulario…";
       ir(BASE_PUBLICA + params);
