@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="theme-color" content="#faf7f2">
+  <title>Doopla — Centro de actividades</title>
+  <link rel="icon" href="https://www.doopla.com.ar/images/favicon/favicon-96x96.png">
+  <link rel="apple-touch-icon" href="https://www.doopla.com.ar/images/favicon/favicon-96x96.png">
+  <!--
+    El envoltorio del centro de actividades de Doopla (10/11/2026).
+
+    Por qué existe: el sistema vive en Google Apps Script, y Google no soporta
+    tener varias cuentas de Google abiertas a la vez en sus web apps ("Multi-
+    login … isn't supported for Apps Script, add-ons, or web apps", dice su
+    documentación). En los celulares, donde casi todos tienen dos o tres
+    cuentas, Google reescribe la dirección con "u/1" y muestra "No se pudo
+    abrir el archivo en este momento". El sistema no necesita la cuenta de
+    Google para nada: identifica a cada persona por la clave del link (?k=).
+
+    Esta página abre la pantalla de Google ADENTRO, en un marco sin cookies
+    (credentialless; en iPhone además el navegador bloquea las cookies de
+    terceros), así que Google la ve como anónima y la abre siempre. Los links
+    entre pantallas no salen del marco: la pantalla le avisa a esta página y
+    esta cambia lo que se ve adentro (ver tema.html en el proyecto de Apps
+    Script, "centro-ir").
+
+    Se usa con los mismos parámetros que la dirección de Google:
+      ?app=hub&k=CLAVE   ?app=pretasaciones&k=CLAVE   etc.
+  -->
+  <style>
+    html, body { margin: 0; height: 100%; background: #faf7f2; font-family: system-ui, -apple-system, sans-serif; }
+    #marco { border: 0; width: 100%; height: 100%; display: block; }
+    #aviso {
+      position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+      padding: 24px; text-align: center; color: #5b5650; font-size: 15px; line-height: 1.5;
+      background: #faf7f2;
+    }
+    #aviso b { color: #1f1d1a; }
+    #aviso[hidden] { display: none; }
+  </style>
+</head>
+<body>
+  <div id="aviso">Abriendo el centro de actividades…</div>
+  <iframe id="marco" credentialless allow="clipboard-write" referrerpolicy="no-referrer" title="Centro de actividades Doopla"></iframe>
+  <script>
+    // La publicación "agentes" del sistema. Si cambia, cambia acá.
+    var BASE = "https://script.google.com/macros/s/AKfycbxzZ6VH19dMIorHKec-5IMCbpXrxYuixt5JSSccgoQ1SqXAlQyQbLN5V9kMJakGwI2d/exec";
+    // La publicación "pública": los dos formularios que completa alguien de
+    // afuera (el propietario que pide una pretasación, el comprador que dice
+    // qué busca). No piden clave. Si cambia, cambia acá (19/11/2026).
+    var BASE_PUBLICA = "https://script.google.com/macros/s/AKfycbz7aZLZzmZER-N_8M_KKtPKs-t-0jDQVsEVoMcY06BuEl2spsUH3Tgz7ylhLd53iTtd/exec";
+    var FORMULARIOS = { pretasacion: "Tasá tu propiedad gratis — Doopla", busqueda: "Contanos qué estás buscando — Doopla" };
+    var marco = document.getElementById("marco");
+    var aviso = document.getElementById("aviso");
+
+    // Lo que se muestra adentro; la dirección de esta página guarda los
+    // mismos parámetros, así recargar o compartir mantiene la pantalla.
+    function ir(url) {
+      marco.src = url;
+      try {
+        var q = url.indexOf("?") === -1 ? "" : url.slice(url.indexOf("?"));
+        history.replaceState(null, "", location.pathname + q);
+      } catch (e) { /* sin historial, igual anda */ }
+    }
+
+    var params = location.search || "";
+    var app = (params.match(/[?&]app=([^&]*)/) || [])[1] || "";
+    if (FORMULARIOS[app]) {
+      document.title = FORMULARIOS[app];
+      aviso.textContent = "Abriendo el formulario…";
+      ir(BASE_PUBLICA + params);
+    } else if (params.indexOf("k=") === -1) {
+      aviso.innerHTML = "A este link le falta tu clave personal.<br><b>Pedile a Lumma o a Doopla tu link.</b>";
+    } else {
+      ir(BASE + params);
+    }
+
+    marco.addEventListener("load", function () { aviso.hidden = true; });
+    setTimeout(function () { if (!aviso.hidden) aviso.innerHTML = "Está tardando más de lo normal… <b>probá recargar</b>."; }, 25000);
+
+    // Le dice a la pantalla de adentro que está en el envoltorio. La pantalla
+    // vive dos marcos más abajo (Google la mete en su propio marco), así que
+    // se avisa a todos los marcos descendientes, varias veces, hasta que
+    // cargue. Las ventanas de otro origen igual aceptan postMessage.
+    function avisarATodos(w) {
+      try {
+        w.postMessage({ tipo: "centro-hola" }, "*");
+        for (var i = 0; i < w.length; i++) avisarATodos(w.frames[i]);
+      } catch (e) { /* un marco que no se deja mirar; seguimos */ }
+    }
+    setInterval(function () { if (marco.contentWindow) avisarATodos(marco.contentWindow); }, 700);
+
+    // La pantalla de adentro pide cambiar de pantalla.
+    window.addEventListener("message", function (e) {
+      var d = e.data || {};
+      if (d.tipo !== "centro-ir" || typeof d.url !== "string") return;
+      if (d.url.indexOf(BASE) !== 0 && d.url.indexOf(BASE_PUBLICA) !== 0) return;   // solo direcciones del sistema
+      if (!/googleusercontent\.com$|script\.google\.com$/.test(e.origin)) return;
+      ir(d.url);
+    });
+  </script>
+</body>
+</html>
