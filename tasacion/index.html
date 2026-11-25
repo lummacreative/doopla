@@ -500,8 +500,23 @@
       };
     }
 
+    // 20/11/2026: de a 3 por vez y hasta 15. Antes salían todas juntas y el
+    // servidor anotaba una sola (Bacacay 3549: 22 fotos, 1 anotada).
+    const FOTOS_MAXIMAS = 15, SUBIDAS_A_LA_VEZ = 3;
+    let fotosElegidas = 0, enVuelo = 0;
+    const enCola = [];
+    function siguienteSubida() {
+      while (enVuelo < SUBIDAS_A_LA_VEZ && enCola.length) { enVuelo++; enCola.shift()(); }
+    }
+    function terminoSubida() { enVuelo--; siguienteSubida(); }
+
     function agregarFoto(archivo) {
       if (!archivo.type.startsWith('image/')) return;
+      if (fotosElegidas >= FOTOS_MAXIMAS) {
+        document.getElementById('error').textContent = 'Con ' + FOTOS_MAXIMAS + ' fotos alcanza: subimos las primeras ' + FOTOS_MAXIMAS + '.';
+        return;
+      }
+      fotosElegidas++;
       const caja = document.createElement('div');
       caja.className = 'mini';
       caja.innerHTML = '<div class="estado">subiendo…</div>';
@@ -510,14 +525,16 @@
       subiendo++;
       achicar(archivo, (base64, dataUrl) => {
         caja.insertAdjacentHTML('afterbegin', '<img src="' + dataUrl + '">');
-        google.script.run
-          .withSuccessHandler(() => { subiendo--; caja.classList.add('lista'); })
+        enCola.push(() => google.script.run
+          .withSuccessHandler(() => { subiendo--; caja.classList.add('lista'); terminoSubida(); })
           .withFailureHandler(err => {
             subiendo--;
             caja.querySelector('.estado').textContent = 'error';
             document.getElementById('error').textContent = 'Una foto no se pudo subir: ' + (err.message || err);
+            terminoSubida();
           })
-          .subirFotoPretasacion(idPretasacion, archivo.name, base64, 'image/jpeg');
+          .subirFotoPretasacion(idPretasacion, archivo.name, base64, 'image/jpeg'));
+        siguienteSubida();
       });
     }
 
