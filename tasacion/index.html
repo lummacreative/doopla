@@ -343,7 +343,7 @@
     // ── paso 2: la propiedad ───────────────────────────────────────────────
     // Solo los que son <input>/<select>: el resto son grupos de botones y
     // se guardan solos al tocarlos.
-    const CAMPOS_2 = ['direccion','barrio','piso_depto','sup_cubierta','sup_balcon',
+    const CAMPOS_2 = ['direccion','barrio','piso_depto','sup_cubierta','sup_balcon','sup_descubierta',
                       'antiguedad','expensas','comentarios'];
 
     function paso2() {
@@ -361,9 +361,10 @@
           grupo('dormitorios', 'Dormitorios', IC_CAMA, ['0','1','2','3','4','5 o más'], 'numeros') +
           grupo('banos', 'Baños', IC_BANO, ['1','2','3','4 o más'], 'numeros') +
           '<div class="dupla">' + campo('sup_cubierta', 'M² cubiertos', '', 'number') +
-            campo('sup_balcon', 'M² de balcón o patio', '', 'number') + '</div>' +
-          '<div class="dupla">' + campo('antiguedad', 'Antigüedad', '(años)', 'number') +
-            campo('expensas', 'Expensas por mes', '(en pesos)') + '</div>' +
+            campo('antiguedad', 'Antigüedad', '(años)', 'number') + '</div>' +
+          '<div class="dupla">' + campo('sup_balcon', 'M² de balcón', '', 'number') +
+            campo('sup_descubierta', 'M² de patio o terraza', '', 'number') + '</div>' +
+          campo('expensas', 'Expensas por mes', '(en pesos)') +
           grupo('estado', 'Estado', '', ['Muy bueno', 'Bueno', 'A refaccionar', 'A estrenar', 'Reciclado']) +
           grupo('cochera', 'Cochera', IC_AUTO,
             ['No tiene', 'Fija cubierta', 'Fija descubierta', 'Móvil']) +
